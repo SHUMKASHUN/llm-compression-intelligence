@@ -2,11 +2,13 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from datasets import load_dataset
-import math
+from datasets import Dataset as Dataset_hf
 
+import math
+import json
 
 class EvalDataset(Dataset):
-    def __init__(self, args, task_name, block_size, stride, tokenizer, file_num=-1, dtype="auto", vocab_size=None):
+    def __init__(self, args, task_name, block_size, stride, tokenizer, cluster, file_num=-1, dtype="auto", vocab_size=None):
         self.args = args
         self.task_name = task_name
         self.block_size = block_size
@@ -23,30 +25,40 @@ class EvalDataset(Dataset):
                 self._dtype = np.int32
         else:
             self._dtype = dtype
+        self.cluster = cluster
 
         self._prepare()
         self.prev_end_loc = 0
         self.seq_len = len(self.data)
         self.begin_loc = 0
-
     def _prepare(self):
         self._curr_idx = 0
         self._arr = []
-        self._raw_dataset = load_dataset(
-            "hkust-nlp/llm-compression",
-            self.task_name,
-            split='test[:]' if self.file_num == -1 else f"test[:{self.file_num}]",
-            cache_dir=self.args.cache_dir,
+        # self._raw_dataset = load_dataset(
+        #     "hkust-nlp/llm-compression",
+        #     self.task_name,
+        #     split='test[:]' if self.file_num == -1 else f"test[:{self.file_num}]",
+        #     cache_dir=self.args.cache_dir,
 
-        )
-
-        self.raw_dataset = self._raw_dataset.filter(lambda example: len(example['content']) > 0)
+        # )
+        self._raw_dataset = []
+        count = 0
+        with open(f"/ssddata/ksshumab/Pretrain/Clustering/Pretrain-Data-Selection-Clustering/documents_clean_with_cluster_30M/cluster_{self.cluster}.json", "r") as f:
+            for line in f:
+                data = json.loads(line)
+                if len(data["raw_content"]) > 0:
+                    count += 1
+                    self._raw_dataset.append(data)
+                    if count > 20:
+                        break
+        self.raw_dataset =  Dataset_hf.from_list(self._raw_dataset)
+        # self.raw_dataset = self._raw_dataset.filter(lambda example: len(example['content']) > 0)
         self.character_num = 0
         for i in range(len(self.raw_dataset)):
-            self.character_num += len(self.raw_dataset[i]['content'])
+            self.character_num += len(self.raw_dataset[i]['raw_content'])
 
         self.data = self.raw_dataset.map(
-            lambda example: {"encoding": np.array(self.tokenizer.encode(example['content']), dtype=self._dtype)}, num_proc=8)
+            lambda example: {"encoding": np.array(self.tokenizer.encode(example['raw_content']), dtype=self._dtype)}, num_proc=8)
 
         self.data = np.concatenate([a['encoding'] for a in self.data], axis=0)
 

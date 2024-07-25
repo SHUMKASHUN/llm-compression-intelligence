@@ -9,7 +9,7 @@ from transformers import (
 from packed_dataset import EvalDataset
 import numpy as np
 from tqdm import tqdm
-
+import json
 def cross_entropy(
     logits, targets, attention_mask: torch.Tensor = None
 ):
@@ -78,7 +78,7 @@ def main():
     )
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--cache_dir", type=str, default=None)
-
+    parser.add_argument("--cluster", type=int)
     args = parser.parse_args()
     print(args)
     device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
@@ -105,7 +105,8 @@ def main():
         tokenizer=tokenizer,
         stride=args.stride,
         vocab_size=tokenizer.vocab_size,
-        file_num=args.file_num
+        file_num=args.file_num,
+        cluster=args.cluster
     )
     valdataloader = DataLoader(valdataset, batch_size=args.batch_size, shuffle=False)
     total_loss = validate(args, model, valdataloader, device)
@@ -113,7 +114,16 @@ def main():
     print("Total loss:", total_loss)
     print("Character num:", valdataset.character_num)
     print("BPC:", total_loss / (valdataset.character_num * np.log(2)) )
-
+    
+    with open("/ssddata/ksshumab/Pretrain/Clustering/results.json", "a") as f:
+        results = {"Total loss": total_loss, 
+                   "Character num": valdataset.character_num,
+                   "BPC": total_loss / (valdataset.character_num * np.log(2)),
+                   "Model": args.model_name,
+                   "Cluster": args.cluster
+                   }
+        f.write(json.dumps(results))
+        f.write("\n")
     print("finished")
 
 
