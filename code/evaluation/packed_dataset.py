@@ -27,10 +27,16 @@ class EvalDataset(Dataset):
             self._dtype = dtype
         self.cluster = cluster
 
+        self.ids = []
+        self.token_lens = []
+        self.char_number_list = []
+
         self._prepare()
         self.prev_end_loc = 0
         self.seq_len = len(self.data)
         self.begin_loc = 0
+
+
     def _prepare(self):
         self._curr_idx = 0
         self._arr = []
@@ -47,19 +53,23 @@ class EvalDataset(Dataset):
             for line in f:
                 data = json.loads(line)
                 if len(data["raw_content"]) > 0:
-                    count += 1
+                    self.ids.append(data["doc_id"])
+                    # self.token_lens.append()
+                    # count += 1
+                    # print(len(data["raw_content"]))
                     self._raw_dataset.append(data)
-                    if count > 20:
-                        break
+                    # if count > 20:
+                    #     break
         self.raw_dataset =  Dataset_hf.from_list(self._raw_dataset)
         # self.raw_dataset = self._raw_dataset.filter(lambda example: len(example['content']) > 0)
         self.character_num = 0
         for i in range(len(self.raw_dataset)):
             self.character_num += len(self.raw_dataset[i]['raw_content'])
-
+            self.char_number_list.append(len(self.raw_dataset[i]['raw_content']))
         self.data = self.raw_dataset.map(
             lambda example: {"encoding": np.array(self.tokenizer.encode(example['raw_content']), dtype=self._dtype)}, num_proc=8)
-
+        for i in range(len(self.data)):
+            self.token_lens.append(len(self.data[i]['encoding']))
         self.data = np.concatenate([a['encoding'] for a in self.data], axis=0)
 
     def __len__(self):

@@ -4,6 +4,6 @@ CUDA_VISIBLE_DEVICES=0 python -u main.py\
     --task_name cc\
     --block_size 1900\
     --stride 512\
-    --batch_size 8\
+    --batch_size 1\
     --cluster 0 \
     --flash 
