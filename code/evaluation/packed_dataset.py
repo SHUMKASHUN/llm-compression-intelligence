@@ -49,7 +49,7 @@ class EvalDataset(Dataset):
         # )
         self._raw_dataset = []
         count = 0
-        with open(f"/ssddata/ksshumab/Pretrain/Clustering/Pretrain-Data-Selection-Clustering/documents_clean_with_cluster_30M/cluster_{self.cluster}.json", "r") as f:
+        with open(f"/university/Clustering/Pretrain-Data-Selection-Clustering/documents_clean_with_cluster_30M/cluster_{self.cluster}.json", "r") as f:
             for line in f:
                 data = json.loads(line)
                 if len(data["raw_content"]) > 0:

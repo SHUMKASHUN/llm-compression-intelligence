@@ -53,7 +53,7 @@ def validate(args, model,val_dataset, val_dataloader: DataLoader, device):
         while val_dataset.token_lens[len(example_total_losses)] <= curr_loss_len:
             remain_len = curr_loss_len - val_dataset.token_lens[len(example_total_losses)]
             example_total_losses.append(curr_temp_loss + sum(loss[:len(loss)-remain_len]))
-            with open("/ssddata/ksshumab/Pretrain/Clustering/testtesttest.json", "a") as f:
+            with open(f"/university/Clustering/id2loss/{args.model_name}.json", "a") as f:
                 output = {}
                 output["doc_id"] = val_dataset.ids[len(example_total_losses) - 1]
                 output["Model"] = args.model_name
